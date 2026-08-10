@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MapLibreMap } from "@/components/map/MapLibreMap";
 import { PlaceCard } from "@/components/common/PlaceCard";
 import { demoPlaces } from "@/lib/data/demo-places";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
@@ -141,7 +142,7 @@ async function MapContent({
     <main className="flex flex-1 flex-col gap-4">
       <div className="rounded-[2rem] border border-black/10 bg-white/80 p-5 shadow-sm">
         <h1 className="text-2xl font-semibold">Karte</h1>
-        <p className="mt-2 text-sm text-zinc-600">Marker-Daten werden bereits aus Places geladen. Vollbild-MapLibre folgt als nächster UI-Schritt.</p>
+        <p className="mt-2 text-sm text-zinc-600">Echte MapLibre-Karte mit Markern, Statusfarben und Popups.</p>
       </div>
 
       <section className="rounded-[2rem] border border-black/10 bg-white/80 p-5 shadow-sm">
@@ -162,19 +163,8 @@ async function MapContent({
         </div>
       </section>
 
-      <section className="rounded-[2rem] border border-dashed border-zinc-300 bg-zinc-50 p-5">
-        <h2 className="text-lg font-semibold">Marker-Vorschau ({places.length})</h2>
-        <p className="mt-1 text-sm text-zinc-600">Jeder Eintrag mit Koordinaten kann in der nächsten Iteration als Marker auf der Karte gerendert werden.</p>
-        <div className="mt-4 grid gap-2 text-sm text-zinc-700">
-          {places.slice(0, 10).map((place) => (
-            <div key={`coords-${place.id}`} className="rounded-xl border border-zinc-200 bg-white px-3 py-2">
-              {place.name}: {place.latitude.toFixed(5)}, {place.longitude.toFixed(5)}
-            </div>
-          ))}
-          {places.length === 0 ? (
-            <div className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-zinc-500">Keine Plätze für den gewählten Status.</div>
-          ) : null}
-        </div>
+      <section className="overflow-hidden rounded-[2rem] border border-black/10 bg-white/80 shadow-sm">
+        <MapLibreMap places={places} />
       </section>
 
       <section className="grid gap-3">

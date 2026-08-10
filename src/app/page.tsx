@@ -46,7 +46,7 @@ export default function HomePage() {
         <div className="rounded-[2rem] border border-black/10 bg-white/80 p-5 shadow-sm">
           <h3 className="text-lg font-semibold">Kartenvorschau</h3>
           <div className="mt-4 rounded-[1.5rem] border border-dashed border-zinc-300 bg-zinc-100 p-8 text-center text-sm text-zinc-600">
-            MapLibre wird später hier als echte Vollbildkarte eingebunden.
+            Die echte MapLibre-Karte ist jetzt auf der Karten-Seite verfügbar.
           </div>
         </div>
       </section>
