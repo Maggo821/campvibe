@@ -13,6 +13,35 @@ const tabs = [
   { label: "Nie wieder", href: "/my-places/never-again" },
 ];
 
+type StatusRow = {
+  place_id: string;
+  visited: boolean | null;
+  favorite: boolean | null;
+  wishlist: boolean | null;
+  planned: boolean | null;
+  never_again: boolean | null;
+};
+
+function mapStatus(row: StatusRow) {
+  if (row.never_again) {
+    return "never_again" as const;
+  }
+  if (row.favorite) {
+    return "favorite" as const;
+  }
+  if (row.wishlist) {
+    return "wishlist" as const;
+  }
+  if (row.planned) {
+    return "planned" as const;
+  }
+  if (row.visited) {
+    return "visited" as const;
+  }
+
+  return undefined;
+}
+
 export default function MyPlacesPage() {
   return <MyPlacesContent />;
 }
@@ -29,15 +58,41 @@ async function MyPlacesContent() {
       } = await supabase.auth.getUser();
 
       if (user) {
-        const { data } = await supabase
-          .from("places")
-          .select("id, name, description, place_type, city, country, latitude, longitude, price_from, currency, permanent_camper_level, pitch_style, evening_rules")
-          .eq("created_by", user.id)
-          .order("created_at", { ascending: false })
-          .limit(30);
+        const [statusResult, ownPlacesResult] = await Promise.all([
+          supabase
+            .from("user_place_status")
+            .select("place_id, visited, favorite, wishlist, planned, never_again")
+            .eq("user_id", user.id),
+          supabase
+            .from("places")
+            .select("id, name, description, place_type, city, country, latitude, longitude, price_from, currency, permanent_camper_level, pitch_style, evening_rules")
+            .eq("created_by", user.id)
+            .order("created_at", { ascending: false })
+            .limit(40),
+        ]);
 
-        if (data && data.length > 0) {
-          places = data.map((place) => ({
+        const statusRows = (statusResult.data ?? []) as StatusRow[];
+        const statusByPlaceId = new Map(statusRows.map((row) => [row.place_id, row]));
+
+        const ownPlaceIds = new Set((ownPlacesResult.data ?? []).map((row) => row.id));
+        const statusOnlyPlaceIds = statusRows
+          .map((row) => row.place_id)
+          .filter((placeId) => !ownPlaceIds.has(placeId));
+
+        let statusOnlyPlaces: typeof ownPlacesResult.data = [];
+        if (statusOnlyPlaceIds.length > 0) {
+          const { data } = await supabase
+            .from("places")
+            .select("id, name, description, place_type, city, country, latitude, longitude, price_from, currency, permanent_camper_level, pitch_style, evening_rules")
+            .in("id", statusOnlyPlaceIds)
+            .limit(40);
+          statusOnlyPlaces = data ?? [];
+        }
+
+        const combined = [...(ownPlacesResult.data ?? []), ...statusOnlyPlaces];
+
+        if (combined.length > 0) {
+          places = combined.map((place) => ({
             id: place.id,
             name: place.name,
             description: place.description ?? "",
@@ -52,11 +107,13 @@ async function MyPlacesContent() {
             pitchStyle: (place.pitch_style ?? "unknown") as PlaceSummary["pitchStyle"],
             eveningRules: (place.evening_rules ?? "unknown") as PlaceSummary["eveningRules"],
             tags: [place.place_type],
-            status: "visited",
+            status: statusByPlaceId.get(place.id) ? mapStatus(statusByPlaceId.get(place.id)!) : "visited",
           }));
         } else {
           places = [];
         }
+      } else {
+        places = demoPlaces;
       }
     }
   }

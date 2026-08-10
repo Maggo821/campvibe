@@ -282,6 +282,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      user_place_status: {
+        Row: {
+          id: string;
+          user_id: string;
+          place_id: string;
+          visited: boolean | null;
+          favorite: boolean | null;
+          wishlist: boolean | null;
+          planned: boolean | null;
+          never_again: boolean | null;
+          personal_note: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          place_id: string;
+          visited?: boolean | null;
+          favorite?: boolean | null;
+          wishlist?: boolean | null;
+          planned?: boolean | null;
+          never_again?: boolean | null;
+          personal_note?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          place_id?: string;
+          visited?: boolean | null;
+          favorite?: boolean | null;
+          wishlist?: boolean | null;
+          planned?: boolean | null;
+          never_again?: boolean | null;
+          personal_note?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
