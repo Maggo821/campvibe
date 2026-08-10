@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { demoPlaces } from "@/lib/data/demo-places";
 import { PlaceCard } from "@/components/common/PlaceCard";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import type { PlaceSummary } from "@/types/database";
 
 const tabs = [
   { label: "Besucht", href: "/my-places/visited" },
@@ -11,6 +14,53 @@ const tabs = [
 ];
 
 export default function MyPlacesPage() {
+  return <MyPlacesContent />;
+}
+
+async function MyPlacesContent() {
+  const supabaseReady = hasSupabaseEnv();
+  let places: PlaceSummary[] = demoPlaces;
+
+  if (supabaseReady) {
+    const supabase = await getSupabaseServerClient();
+    if (supabase) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data } = await supabase
+          .from("places")
+          .select("id, name, description, place_type, city, country, latitude, longitude, price_from, currency, permanent_camper_level, pitch_style, evening_rules")
+          .eq("created_by", user.id)
+          .order("created_at", { ascending: false })
+          .limit(30);
+
+        if (data && data.length > 0) {
+          places = data.map((place) => ({
+            id: place.id,
+            name: place.name,
+            description: place.description ?? "",
+            placeType: place.place_type as PlaceSummary["placeType"],
+            city: place.city ?? "",
+            country: place.country ?? "",
+            latitude: place.latitude ?? 0,
+            longitude: place.longitude ?? 0,
+            priceFrom: place.price_from ?? undefined,
+            currency: place.currency ?? undefined,
+            permanentCamperLevel: (place.permanent_camper_level ?? "unknown") as PlaceSummary["permanentCamperLevel"],
+            pitchStyle: (place.pitch_style ?? "unknown") as PlaceSummary["pitchStyle"],
+            eveningRules: (place.evening_rules ?? "unknown") as PlaceSummary["eveningRules"],
+            tags: [place.place_type],
+            status: "visited",
+          }));
+        } else {
+          places = [];
+        }
+      }
+    }
+  }
+
   return (
     <main className="flex flex-1 flex-col gap-4">
       <div className="rounded-[2rem] border border-black/10 bg-white/80 p-5 shadow-sm">
@@ -24,9 +74,14 @@ export default function MyPlacesPage() {
         </div>
       </div>
       <div className="grid gap-3">
-        {demoPlaces.map((place) => (
+        {places.map((place) => (
           <PlaceCard key={place.id} place={place} />
         ))}
+        {places.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-zinc-300 bg-zinc-50 p-6 text-sm text-zinc-600">
+            Noch keine gespeicherten Plätze vorhanden.
+          </div>
+        ) : null}
       </div>
     </main>
   );

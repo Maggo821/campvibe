@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { demoPlaces } from "@/lib/data/demo-places";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export default function PlaceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   return <PlaceDetailContent params={params} />;
@@ -7,7 +9,33 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
 
 async function PlaceDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const place = demoPlaces.find((entry) => entry.id === id);
+  let place = demoPlaces.find((entry) => entry.id === id);
+
+  if (hasSupabaseEnv()) {
+    const supabase = await getSupabaseServerClient();
+    if (supabase) {
+      const { data } = await supabase
+        .from("places")
+        .select("id, name, description, place_type, city, country")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (data) {
+        place = {
+          id: data.id,
+          name: data.name,
+          description: data.description ?? "",
+          placeType: data.place_type as (typeof demoPlaces)[number]["placeType"],
+          city: data.city ?? "",
+          country: data.country ?? "",
+          latitude: 0,
+          longitude: 0,
+          tags: [data.place_type],
+          status: "visited",
+        };
+      }
+    }
+  }
 
   if (!place) {
     notFound();
