@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import { createPlaceAction, type CreatePlaceState } from "@/app/places/new/actions";
 
@@ -64,6 +65,8 @@ type NominatimResult = {
   lat: string;
   lon: string;
   display_name: string;
+  name?: string;
+  extratags?: Record<string, string | undefined>;
   address?: {
     road?: string;
     house_number?: string;
@@ -79,6 +82,21 @@ type NominatimResult = {
 export function PlaceCreateWizard() {
   const [step, setStep] = useState(0);
   const [state, action, pending] = useActionState(createPlaceAction, initialState);
+
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [placeType, setPlaceType] = useState<(typeof placeTypes)[number]["value"]>("other");
+
+  const [website, setWebsite] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+
+  const [permanentCamperLevel, setPermanentCamperLevel] = useState<(typeof permanentCamperLevels)[number]["value"]>("unknown");
+  const [pitchStyle, setPitchStyle] = useState<(typeof pitchStyles)[number]["value"]>("unknown");
+  const [eveningRule, setEveningRule] = useState<(typeof eveningRules)[number]["value"]>("unknown");
+  const [priceFrom, setPriceFrom] = useState("");
+  const [currency, setCurrency] = useState("EUR");
+
   const [addressQuery, setAddressQuery] = useState("");
   const [addressLoading, setAddressLoading] = useState(false);
   const [addressError, setAddressError] = useState<string | null>(null);
@@ -98,6 +116,12 @@ export function PlaceCreateWizard() {
 
   const progress = useMemo(() => Math.round(((step + 1) / steps.length) * 100), [step]);
 
+  const saveDisabled = pending || name.trim().length === 0;
+
+  function parseNameFromDisplayName(displayName: string) {
+    return displayName.split(",")[0]?.trim() ?? "";
+  }
+
   async function searchAddress() {
     const query = addressQuery.trim();
     if (!query) {
@@ -110,7 +134,7 @@ export function PlaceCreateWizard() {
     setAddressError(null);
 
     try {
-      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&q=${encodeURIComponent(query)}`;
+      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&namedetails=1&extratags=1&limit=6&q=${encodeURIComponent(query)}`;
       const response = await fetch(url, {
         method: "GET",
         headers: {
@@ -152,12 +176,52 @@ export function PlaceCreateWizard() {
     setLatitude(result.lat);
     setLongitude(result.lon);
     setAddressQuery(result.display_name);
+
+    const detectedName = result.name?.trim() || parseNameFromDisplayName(result.display_name);
+    if (!name.trim() && detectedName) {
+      setName(detectedName);
+    }
+
+    const tags = result.extratags ?? {};
+    const detectedWebsite = tags.website || tags["contact:website"] || tags.url;
+    const detectedPhone = tags.phone || tags["contact:phone"];
+    const detectedEmail = tags.email || tags["contact:email"];
+
+    if (!website.trim() && detectedWebsite) {
+      setWebsite(detectedWebsite);
+    }
+    if (!phone.trim() && detectedPhone) {
+      setPhone(detectedPhone);
+    }
+    if (!email.trim() && detectedEmail) {
+      setEmail(detectedEmail);
+    }
+
     setAddressResults([]);
     setAddressError(null);
   }
 
   return (
     <form action={action} className="space-y-6">
+      <input type="hidden" name="name" value={name} />
+      <input type="hidden" name="description" value={description} />
+      <input type="hidden" name="place_type" value={placeType} />
+      <input type="hidden" name="street" value={street} />
+      <input type="hidden" name="postal_code" value={postalCode} />
+      <input type="hidden" name="city" value={city} />
+      <input type="hidden" name="state" value={region} />
+      <input type="hidden" name="country" value={country} />
+      <input type="hidden" name="latitude" value={latitude} />
+      <input type="hidden" name="longitude" value={longitude} />
+      <input type="hidden" name="website" value={website} />
+      <input type="hidden" name="phone" value={phone} />
+      <input type="hidden" name="email" value={email} />
+      <input type="hidden" name="permanent_camper_level" value={permanentCamperLevel} />
+      <input type="hidden" name="pitch_style" value={pitchStyle} />
+      <input type="hidden" name="evening_rules" value={eveningRule} />
+      <input type="hidden" name="price_from" value={priceFrom} />
+      <input type="hidden" name="currency" value={currency} />
+
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm text-zinc-600">
           <span>Schritt {step + 1} von {steps.length}</span>
@@ -173,12 +237,22 @@ export function PlaceCreateWizard() {
         <section className="grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1 sm:col-span-2">
             <span className="text-sm font-medium">Name *</span>
-            <input name="name" required className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
+            <input
+              required
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
+            />
           </label>
 
           <label className="flex flex-col gap-1 sm:col-span-2">
             <span className="text-sm font-medium">Beschreibung</span>
-            <textarea name="description" rows={4} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
+            <textarea
+              rows={4}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
+            />
           </label>
 
           <label className="flex flex-col gap-1">
@@ -203,7 +277,11 @@ export function PlaceCreateWizard() {
 
           <label className="flex flex-col gap-1 sm:col-span-2">
             <span className="text-sm font-medium">Platztyp</span>
-            <select name="place_type" defaultValue="other" className="rounded-2xl border border-zinc-200 bg-white px-3 py-2">
+            <select
+              value={placeType}
+              onChange={(event) => setPlaceType(event.target.value as (typeof placeTypes)[number]["value"])}
+              className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
+            >
               {placeTypes.map((type) => (
                 <option key={type.value} value={type.value}>{type.label}</option>
               ))}
@@ -212,17 +290,31 @@ export function PlaceCreateWizard() {
 
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium">Website</span>
-            <input name="website" type="url" className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
+            <input
+              type="url"
+              value={website}
+              onChange={(event) => setWebsite(event.target.value)}
+              className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
+            />
           </label>
 
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium">Telefon</span>
-            <input name="phone" className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
+            <input
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
+            />
           </label>
 
           <label className="flex flex-col gap-1 sm:col-span-2">
             <span className="text-sm font-medium">E-Mail</span>
-            <input name="email" type="email" className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
+            />
           </label>
         </section>
       ) : null}
@@ -273,7 +365,6 @@ export function PlaceCreateWizard() {
           <label className="flex flex-col gap-1 sm:col-span-2">
             <span className="text-sm font-medium">Straße</span>
             <input
-              name="street"
               value={street}
               onChange={(event) => setStreet(event.target.value)}
               className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
@@ -283,7 +374,6 @@ export function PlaceCreateWizard() {
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium">PLZ</span>
             <input
-              name="postal_code"
               value={postalCode}
               onChange={(event) => setPostalCode(event.target.value)}
               className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
@@ -293,7 +383,6 @@ export function PlaceCreateWizard() {
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium">Bundesland/Region</span>
             <input
-              name="state"
               value={region}
               onChange={(event) => setRegion(event.target.value)}
               className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
@@ -303,7 +392,6 @@ export function PlaceCreateWizard() {
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium">Stadt</span>
             <input
-              name="city"
               value={city}
               onChange={(event) => setCity(event.target.value)}
               className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
@@ -313,7 +401,6 @@ export function PlaceCreateWizard() {
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium">Land</span>
             <input
-              name="country"
               value={country}
               onChange={(event) => setCountry(event.target.value)}
               className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
@@ -340,7 +427,6 @@ export function PlaceCreateWizard() {
                   <label className="flex flex-col gap-1">
                     <span className="text-sm font-medium">Latitude (-90 bis 90)</span>
                     <input
-                      name="latitude"
                       type="number"
                       step="any"
                       value={latitude}
@@ -352,7 +438,6 @@ export function PlaceCreateWizard() {
                   <label className="flex flex-col gap-1">
                     <span className="text-sm font-medium">Longitude (-180 bis 180)</span>
                     <input
-                      name="longitude"
                       type="number"
                       step="any"
                       value={longitude}
@@ -362,15 +447,11 @@ export function PlaceCreateWizard() {
                   </label>
                 </div>
               ) : (
-                <>
-                  <input type="hidden" name="latitude" value={latitude} />
-                  <input type="hidden" name="longitude" value={longitude} />
-                  <p className="mt-2 text-xs text-zinc-600">
+                <p className="mt-2 text-xs text-zinc-600">
                     {latitude && longitude
                       ? `Aktuell: ${Number(latitude).toFixed(5)}, ${Number(longitude).toFixed(5)}`
                       : "Noch keine Koordinaten gesetzt."}
                   </p>
-                </>
               )}
             </div>
           </section>
@@ -381,7 +462,11 @@ export function PlaceCreateWizard() {
         <section className="grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium">Dauercamper-Anteil</span>
-            <select name="permanent_camper_level" defaultValue="unknown" className="rounded-2xl border border-zinc-200 bg-white px-3 py-2">
+            <select
+              value={permanentCamperLevel}
+              onChange={(event) => setPermanentCamperLevel(event.target.value as (typeof permanentCamperLevels)[number]["value"])}
+              className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
+            >
               {permanentCamperLevels.map((item) => (
                 <option key={item.value} value={item.value}>{item.label}</option>
               ))}
@@ -390,7 +475,11 @@ export function PlaceCreateWizard() {
 
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium">Stellplatzgefühl</span>
-            <select name="pitch_style" defaultValue="unknown" className="rounded-2xl border border-zinc-200 bg-white px-3 py-2">
+            <select
+              value={pitchStyle}
+              onChange={(event) => setPitchStyle(event.target.value as (typeof pitchStyles)[number]["value"])}
+              className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
+            >
               {pitchStyles.map((item) => (
                 <option key={item.value} value={item.value}>{item.label}</option>
               ))}
@@ -399,7 +488,11 @@ export function PlaceCreateWizard() {
 
           <label className="flex flex-col gap-1 sm:col-span-2">
             <span className="text-sm font-medium">Abendregeln / Nachtruhe</span>
-            <select name="evening_rules" defaultValue="unknown" className="rounded-2xl border border-zinc-200 bg-white px-3 py-2">
+            <select
+              value={eveningRule}
+              onChange={(event) => setEveningRule(event.target.value as (typeof eveningRules)[number]["value"])}
+              className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
+            >
               {eveningRules.map((item) => (
                 <option key={item.value} value={item.value}>{item.label}</option>
               ))}
@@ -408,12 +501,23 @@ export function PlaceCreateWizard() {
 
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium">Preis ab</span>
-            <input name="price_from" type="number" min={0} step="0.01" className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={priceFrom}
+              onChange={(event) => setPriceFrom(event.target.value)}
+              className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
+            />
           </label>
 
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium">Währung</span>
-            <input name="currency" defaultValue="EUR" className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
+            <input
+              value={currency}
+              onChange={(event) => setCurrency(event.target.value)}
+              className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
+            />
           </label>
         </section>
       ) : null}
@@ -452,6 +556,17 @@ export function PlaceCreateWizard() {
         </p>
       ) : null}
 
+      {state.success && state.placeId ? (
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/places/${state.placeId}`} className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-semibold text-white">
+            Zum neuen Platz
+          </Link>
+          <Link href="/my-places" className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700">
+            Zu Meine Plaetze
+          </Link>
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
@@ -473,7 +588,7 @@ export function PlaceCreateWizard() {
 
         <button
           type="submit"
-          disabled={pending}
+          disabled={saveDisabled}
           className="ml-auto rounded-full bg-zinc-900 px-5 py-2 text-sm font-semibold text-white disabled:opacity-60"
         >
           {pending ? "Speichert..." : "Jetzt speichern"}

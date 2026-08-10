@@ -155,12 +155,27 @@ export async function createPlaceAction(
     };
   }
 
+  const { error: statusError } = await supabase
+    .from("user_place_status")
+    .upsert(
+      {
+        user_id: user.id,
+        place_id: data.id,
+        visited: true,
+      },
+      { onConflict: "user_id,place_id" },
+    );
+
   revalidatePath("/");
   revalidatePath("/my-places");
+  revalidatePath("/my-places/visited");
+  revalidatePath(`/places/${data.id}`);
 
   return {
     success: true,
-    message: "Platz erfolgreich gespeichert.",
+    message: statusError
+      ? `Platz gespeichert, aber Status konnte nicht gesetzt werden: ${statusError.message}`
+      : "Platz erfolgreich gespeichert.",
     placeId: data.id,
   };
 }
