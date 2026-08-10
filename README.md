@@ -16,7 +16,9 @@ CampVibe is a mobile-first travel and vanlife companion for discovering, rating,
 
 1. Copy .env.example to .env.local and add your Supabase credentials.
 2. Install dependencies with npm install.
-3. Apply the Supabase migration from supabase/migrations/001_init_schema.sql.
+3. Apply Supabase migrations in order:
+	- supabase/migrations/001_init_schema.sql
+	- supabase/migrations/002_phase1_hardening.sql
 4. Start the app with npm run dev.
 
 ### Supabase Setup (with your project)
@@ -33,13 +35,15 @@ Example migration via psql (PowerShell):
 
 `$env:DIRECT_URL="postgresql://..."; psql $env:DIRECT_URL -f supabase/migrations/001_init_schema.sql`
 
+`$env:DIRECT_URL="postgresql://..."; psql $env:DIRECT_URL -f supabase/migrations/002_phase1_hardening.sql`
+
 Optional seed import:
 
 `$env:DIRECT_URL="postgresql://..."; psql $env:DIRECT_URL -f supabase/seed.sql`
 
 ## Supabase
 
-Create a Supabase project and apply the SQL schema from supabase/migrations/001_init_schema.sql.
+Create a Supabase project and apply both SQL migrations from supabase/migrations.
 
 ## Current Implementation Status
 
@@ -78,3 +82,11 @@ Create a Supabase project and apply the SQL schema from supabase/migrations/001_
 ## Deployment
 
 Deploy to Vercel and add the same environment variables in the Vercel project settings.
+
+Recommended auth settings in Supabase dashboard:
+
+- Site URL: your Vercel production domain
+- Redirect URLs: include:
+	- http://localhost:3000/auth/callback
+	- https://YOUR-PROJECT.vercel.app/auth/callback
+	- your custom domain callback URL when available

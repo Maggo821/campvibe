@@ -268,68 +268,90 @@ alter table public.user_place_status enable row level security;
 alter table public.trips enable row level security;
 alter table public.trip_places enable row level security;
 
-create policy if not exists profiles_select_own on public.profiles
+drop policy if exists profiles_select_own on public.profiles;
+create policy profiles_select_own on public.profiles
   for select using (auth.uid() = id);
 
-create policy if not exists profiles_upsert_own on public.profiles
+drop policy if exists profiles_upsert_own on public.profiles;
+create policy profiles_upsert_own on public.profiles
   for insert with check (auth.uid() = id);
 
-create policy if not exists profiles_update_own on public.profiles
+drop policy if exists profiles_update_own on public.profiles;
+create policy profiles_update_own on public.profiles
   for update using (auth.uid() = id);
 
-create policy if not exists places_select_public on public.places
+drop policy if exists places_select_public on public.places;
+create policy places_select_public on public.places
   for select using (true);
 
-create policy if not exists places_insert_own on public.places
+drop policy if exists places_insert_own on public.places;
+create policy places_insert_own on public.places
   for insert with check (auth.uid() = created_by);
 
-create policy if not exists places_update_own on public.places
+drop policy if exists places_update_own on public.places;
+create policy places_update_own on public.places
   for update using (auth.uid() = created_by);
 
-create policy if not exists features_select_public on public.features
+drop policy if exists features_select_public on public.features;
+create policy features_select_public on public.features
   for select using (true);
 
-create policy if not exists place_features_select_public on public.place_features
+drop policy if exists place_features_select_public on public.place_features;
+create policy place_features_select_public on public.place_features
   for select using (true);
 
-create policy if not exists nearby_places_select_public on public.nearby_places
+drop policy if exists nearby_places_select_public on public.nearby_places;
+create policy nearby_places_select_public on public.nearby_places
   for select using (true);
 
-create policy if not exists place_nearby_places_select_public on public.place_nearby_places
+drop policy if exists place_nearby_places_select_public on public.place_nearby_places;
+create policy place_nearby_places_select_public on public.place_nearby_places
   for select using (true);
 
-create policy if not exists place_vibe_ratings_select_own on public.place_vibe_ratings
+drop policy if exists place_vibe_ratings_select_own on public.place_vibe_ratings;
+create policy place_vibe_ratings_select_own on public.place_vibe_ratings
   for select using (auth.uid() = user_id);
 
-create policy if not exists place_vibe_ratings_manage_own on public.place_vibe_ratings
+drop policy if exists place_vibe_ratings_manage_own on public.place_vibe_ratings;
+create policy place_vibe_ratings_manage_own on public.place_vibe_ratings
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-create policy if not exists place_environment_ratings_select_own on public.place_environment_ratings
+drop policy if exists place_environment_ratings_select_own on public.place_environment_ratings;
+create policy place_environment_ratings_select_own on public.place_environment_ratings
   for select using (auth.uid() = user_id);
 
-create policy if not exists place_environment_ratings_manage_own on public.place_environment_ratings
+drop policy if exists place_environment_ratings_manage_own on public.place_environment_ratings;
+create policy place_environment_ratings_manage_own on public.place_environment_ratings
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-create policy if not exists visits_select_own on public.visits
+drop policy if exists visits_select_own on public.visits;
+create policy visits_select_own on public.visits
   for select using (auth.uid() = user_id);
 
-create policy if not exists visits_manage_own on public.visits
+drop policy if exists visits_manage_own on public.visits;
+create policy visits_manage_own on public.visits
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-create policy if not exists visit_ratings_select_own on public.visit_ratings
+drop policy if exists visit_ratings_select_own on public.visit_ratings;
+create policy visit_ratings_select_own on public.visit_ratings
   for select using (true);
 
-create policy if not exists user_place_status_select_own on public.user_place_status
+drop policy if exists user_place_status_select_own on public.user_place_status;
+create policy user_place_status_select_own on public.user_place_status
   for select using (auth.uid() = user_id);
 
-create policy if not exists user_place_status_manage_own on public.user_place_status
+drop policy if exists user_place_status_manage_own on public.user_place_status;
+create policy user_place_status_manage_own on public.user_place_status
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-create policy if not exists trips_select_own on public.trips
+drop policy if exists trips_select_own on public.trips;
+create policy trips_select_own on public.trips
   for select using (auth.uid() = user_id);
 
-create policy if not exists trips_manage_own on public.trips
+drop policy if exists trips_manage_own on public.trips;
+create policy trips_manage_own on public.trips
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-create policy if not exists trip_places_select_own on public.trip_places
+drop policy if exists trip_places_select_own on public.trip_places;
+create policy trip_places_select_own on public.trip_places
   for select using (true);
