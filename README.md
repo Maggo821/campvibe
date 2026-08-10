@@ -19,6 +19,24 @@ CampVibe is a mobile-first travel and vanlife companion for discovering, rating,
 3. Apply the Supabase migration from supabase/migrations/001_init_schema.sql.
 4. Start the app with npm run dev.
 
+### Supabase Setup (with your project)
+
+1. Open Supabase project settings and copy:
+	- Project URL -> `NEXT_PUBLIC_SUPABASE_URL`
+	- anon public key -> `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+	- service role key -> `SUPABASE_SERVICE_ROLE_KEY` (server-only)
+2. In .env.local replace `[YOUR-PASSWORD]` inside `DATABASE_URL` and `DIRECT_URL`.
+3. Use `DIRECT_URL` for SQL migrations (session mode pooler, port 5432).
+4. Keep `DATABASE_URL` for runtime DB clients that need transaction mode (port 6543).
+
+Example migration via psql (PowerShell):
+
+`$env:DIRECT_URL="postgresql://..."; psql $env:DIRECT_URL -f supabase/migrations/001_init_schema.sql`
+
+Optional seed import:
+
+`$env:DIRECT_URL="postgresql://..."; psql $env:DIRECT_URL -f supabase/seed.sql`
+
 ## Supabase
 
 Create a Supabase project and apply the SQL schema from supabase/migrations/001_init_schema.sql.
