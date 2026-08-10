@@ -23,6 +23,40 @@ const placeTypeOptions = [
 const permanentCamperOptions = ["all", "none", "low", "medium", "high", "very_high", "unknown"] as const;
 const eveningRuleOptions = ["all", "relaxed", "normal", "strict", "very_strict", "unknown"] as const;
 
+const placeTypeLabels: Record<(typeof placeTypeOptions)[number], string> = {
+  all: "Alle",
+  camping: "Campingplatz",
+  motorhome_pitch: "Wohnmobilstellplatz",
+  vanlife_camp: "Vanlife-Camp",
+  nature_camp: "Naturcamp",
+  farm: "Hof",
+  winery: "Weingut",
+  glamping: "Glamping",
+  marina: "Marina",
+  beach_camp: "Beach Camp",
+  festival_camp: "Festival Camp",
+  other: "Sonstiges",
+};
+
+const permanentCamperLabels: Record<(typeof permanentCamperOptions)[number], string> = {
+  all: "Alle",
+  none: "Keine",
+  low: "Niedrig",
+  medium: "Mittel",
+  high: "Hoch",
+  very_high: "Sehr hoch",
+  unknown: "Unbekannt",
+};
+
+const eveningRuleLabels: Record<(typeof eveningRuleOptions)[number], string> = {
+  all: "Alle",
+  relaxed: "Entspannt",
+  normal: "Normal",
+  strict: "Strikt",
+  very_strict: "Sehr strikt",
+  unknown: "Unbekannt",
+};
+
 type DiscoverSearchParams = {
   placeType?: string;
   permanent?: string;
@@ -139,7 +173,7 @@ async function DiscoverContent({
     <main className="flex flex-1 flex-col gap-4">
       <div className="rounded-[2rem] border border-black/10 bg-white/80 p-5 shadow-sm">
         <h1 className="text-2xl font-semibold">Entdecken</h1>
-        <p className="mt-2 text-sm text-zinc-600">Filtere nach Place Type, Dauercamper-Level und Abendregeln.</p>
+        <p className="mt-2 text-sm text-zinc-600">Filtere nach Platztyp, Dauercamper-Level und Abendregeln.</p>
       </div>
 
       <section className="rounded-[2rem] border border-black/10 bg-white/80 p-5 shadow-sm">
@@ -150,10 +184,10 @@ async function DiscoverContent({
           </label>
 
           <label className="flex flex-col gap-1 text-sm">
-            Place Type
+            Platztyp
             <select name="placeType" defaultValue={placeType} className="rounded-xl border border-zinc-200 bg-white px-3 py-2">
               {placeTypeOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
+                <option key={option} value={option}>{placeTypeLabels[option]}</option>
               ))}
             </select>
           </label>
@@ -162,7 +196,7 @@ async function DiscoverContent({
             Dauercamper
             <select name="permanent" defaultValue={permanent} className="rounded-xl border border-zinc-200 bg-white px-3 py-2">
               {permanentCamperOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
+                <option key={option} value={option}>{permanentCamperLabels[option]}</option>
               ))}
             </select>
           </label>
@@ -171,7 +205,7 @@ async function DiscoverContent({
             Abendregeln
             <select name="evening" defaultValue={evening} className="rounded-xl border border-zinc-200 bg-white px-3 py-2">
               {eveningRuleOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
+                <option key={option} value={option}>{eveningRuleLabels[option]}</option>
               ))}
             </select>
           </label>

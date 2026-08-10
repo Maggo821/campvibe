@@ -7,6 +7,15 @@ import type { PlaceSummary } from "@/types/database";
 
 const statusOptions = ["all", "visited", "favorites", "wishlist", "planned", "never-again"] as const;
 
+const statusLabels: Record<(typeof statusOptions)[number], string> = {
+  all: "Alle",
+  visited: "Besucht",
+  favorites: "Favoriten",
+  wishlist: "Merkliste",
+  planned: "Geplant",
+  "never-again": "Nie wieder",
+};
+
 type MapSearchParams = {
   status?: string;
 };
@@ -146,7 +155,7 @@ async function MapContent({
                 href={href}
                 className={`rounded-full px-4 py-2 text-sm ${active ? "bg-zinc-900 font-semibold text-white" : "border border-zinc-300 text-zinc-700"}`}
               >
-                {option}
+                {statusLabels[option]}
               </Link>
             );
           })}

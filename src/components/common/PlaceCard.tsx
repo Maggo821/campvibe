@@ -5,7 +5,17 @@ interface PlaceCardProps {
   place: PlaceSummary;
 }
 
+const statusLabelMap: Record<NonNullable<PlaceSummary["status"]>, string> = {
+  favorite: "Favorit",
+  visited: "Besucht",
+  wishlist: "Merkliste",
+  planned: "Geplant",
+  never_again: "Nie wieder",
+};
+
 export function PlaceCard({ place }: PlaceCardProps) {
+  const statusLabel = place.status ? statusLabelMap[place.status] : "Neu";
+
   return (
     <Link
       href={`/places/${place.id}`}
@@ -17,7 +27,7 @@ export function PlaceCard({ place }: PlaceCardProps) {
           <p className="text-sm text-zinc-600">{place.city}, {place.country}</p>
         </div>
         <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">
-          {place.status ?? "new"}
+          {statusLabel}
         </span>
       </div>
       <p className="text-sm text-zinc-600">{place.description}</p>

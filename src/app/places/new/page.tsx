@@ -1,17 +1,24 @@
 import Link from "next/link";
 import { PlaceCreateWizard } from "@/components/places/PlaceCreateWizard";
-import { hasSupabaseEnv } from "@/lib/supabase/env";
+import { getSupabaseEnvDiagnostics, hasSupabaseEnv } from "@/lib/supabase/env";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function NewPlacePage() {
   const supabaseReady = hasSupabaseEnv();
+  const envDiagnostics = getSupabaseEnvDiagnostics();
 
   if (!supabaseReady) {
     return (
       <main className="rounded-[2rem] border border-black/10 bg-white/80 p-6 shadow-sm">
         <h1 className="text-2xl font-semibold">Neuen Platz anlegen</h1>
         <p className="mt-2 text-sm text-zinc-600">
-          Supabase ist noch nicht konfiguriert. Bitte .env.local aus .env.example erstellen.
+          Supabase ist noch nicht vollständig konfiguriert.
+        </p>
+        <p className="mt-2 text-sm text-zinc-600">
+          Fehlende Variablen: {envDiagnostics.missing.join(", ") || "unbekannt"}
+        </p>
+        <p className="mt-2 text-sm text-zinc-500">
+          Auf Vercel bitte für Preview und Production setzen und danach neu deployen.
         </p>
       </main>
     );
