@@ -4,6 +4,7 @@ import { demoPlaces } from "@/lib/data/demo-places";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { PlaceSummary } from "@/types/database";
+import { updateUserPlaceStatusAction } from "@/app/places/[id]/actions";
 
 const tabs = [
   { key: "overview", label: "Übersicht" },
@@ -39,6 +40,14 @@ const permanentCamperLabels = {
   very_high: "Sehr hoch",
   unknown: "Unbekannt",
 } as const;
+
+const statusChips = [
+  { key: "visited", label: "Besucht" },
+  { key: "favorite", label: "Favorit" },
+  { key: "wishlist", label: "Merkliste" },
+  { key: "planned", label: "Geplant" },
+  { key: "never_again", label: "Nie wieder" },
+] as const;
 
 const pitchStyleLabels = {
   open_field: "Offenes Feld",
@@ -156,7 +165,27 @@ async function PlaceDetailContent({
   let placeVibeRating: Record<string, number | string | null> | null = null;
   let placeEnvironmentRating: Record<string, number | string | null> | null = null;
   let placePhotos: Array<{ id: string; caption: string | null; storage_path: string }> = [];
-  let userStatus: { personal_note: string | null } | null = null;
+  let photoUrls = new Map<string, string>();
+  let userStatus: {
+    visited: boolean | null;
+    favorite: boolean | null;
+    wishlist: boolean | null;
+    planned: boolean | null;
+    never_again: boolean | null;
+    personal_note: string | null;
+  } | null = null;
+  let nearbyPlaces: Array<{
+    id: string;
+    name: string;
+    category: string;
+    distance_meters: number | null;
+    walking_minutes: number | null;
+    driving_minutes: number | null;
+    user_note: string | null;
+    rating: number | null;
+    favorite: boolean | null;
+    description: string | null;
+  }> = [];
 
   if (hasSupabaseEnv()) {
     const supabase = await getSupabaseServerClient();
@@ -201,7 +230,7 @@ async function PlaceDetailContent({
           .filter((value): value is string => Boolean(value));
 
         if (user) {
-          const [visitsResult, vibeResult, environmentResult, photosResult, statusResult] = await Promise.all([
+          const [visitsResult, vibeResult, environmentResult, photosResult, statusResult, nearbyLinksResult, nearbyCatalogResult] = await Promise.all([
             supabase
               .from("visits")
               .select("id, arrival_date, departure_date, price_per_night, total_price, currency, pitch_number, persons, vehicle, note")
@@ -226,10 +255,17 @@ async function PlaceDetailContent({
               .order("sort_order", { ascending: true }),
             supabase
               .from("user_place_status")
-              .select("personal_note")
+              .select("visited, favorite, wishlist, planned, never_again, personal_note")
               .eq("place_id", id)
               .eq("user_id", user.id)
               .maybeSingle(),
+            supabase
+              .from("place_nearby_places")
+              .select("nearby_place_id, distance_meters, walking_minutes, driving_minutes, user_note, rating, favorite")
+              .eq("place_id", id),
+            supabase
+              .from("nearby_places")
+              .select("id, name, category, description"),
           ]);
 
           visits = visitsResult.data ?? [];
@@ -237,6 +273,48 @@ async function PlaceDetailContent({
           placeEnvironmentRating = environmentResult.data;
           placePhotos = photosResult.data ?? [];
           userStatus = statusResult.data;
+
+          const nearbyMap = new Map((nearbyCatalogResult.data ?? []).map((entry) => [entry.id, entry]));
+          nearbyPlaces = (nearbyLinksResult.data ?? [])
+            .map((link) => {
+              const detail = nearbyMap.get(link.nearby_place_id);
+              if (!detail) {
+                return null;
+              }
+
+              return {
+                id: detail.id,
+                name: detail.name,
+                category: detail.category,
+                distance_meters: link.distance_meters,
+                walking_minutes: link.walking_minutes,
+                driving_minutes: link.driving_minutes,
+                user_note: link.user_note,
+                rating: link.rating,
+                favorite: link.favorite,
+                description: detail.description,
+              };
+            })
+            .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
+            .sort((a, b) => (a.distance_meters ?? Number.MAX_SAFE_INTEGER) - (b.distance_meters ?? Number.MAX_SAFE_INTEGER));
+
+          if (placePhotos.length > 0) {
+            const signedUrlResult = await supabase.storage
+              .from("place-photos")
+              .createSignedUrls(
+                placePhotos.map((photo) => photo.storage_path),
+                60 * 60,
+              );
+
+            if (signedUrlResult.data) {
+              signedUrlResult.data.forEach((entry, index) => {
+                const photo = placePhotos[index];
+                if (photo && entry?.signedUrl) {
+                  photoUrls.set(photo.id, entry.signedUrl);
+                }
+              });
+            }
+          }
         }
       }
     }
@@ -276,6 +354,28 @@ async function PlaceDetailContent({
           Ort in der Nähe hinzufügen
         </Link>
       </div>
+
+      <section className="rounded-[1.5rem] border border-zinc-200 bg-zinc-50 p-4">
+        <div className="flex flex-wrap gap-2">
+          {statusChips.map((chip) => {
+            const active = Boolean(userStatus?.[chip.key]);
+
+            return (
+              <form key={chip.key} action={updateUserPlaceStatusAction}>
+                <input type="hidden" name="place_id" value={place.id} />
+                <input type="hidden" name="status_field" value={chip.key} />
+                <input type="hidden" name="next_value" value={String(!active)} />
+                <button
+                  type="submit"
+                  className={`rounded-full px-4 py-2 text-sm ${active ? "bg-zinc-900 font-semibold text-white" : "border border-zinc-300 bg-white text-zinc-700"}`}
+                >
+                  {chip.label}
+                </button>
+              </form>
+            );
+          })}
+        </div>
+      </section>
 
       <div className="flex flex-wrap gap-2">
         {tabs.map((entry) => {
@@ -386,6 +486,42 @@ async function PlaceDetailContent({
           ) : (
             <p className="mt-4 text-sm text-zinc-600">Noch keine persönliche Umgebungsbewertung vorhanden.</p>
           )}
+
+          <div className="mt-6 border-t border-zinc-200 pt-6">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-base font-semibold">In der Nähe</h3>
+              <Link href={`/places/${place.id}/nearby/new`} className="text-sm font-medium text-zinc-700 underline">
+                Ort in der Nähe hinzufügen
+              </Link>
+            </div>
+
+            {nearbyPlaces.length > 0 ? (
+              <div className="mt-4 grid gap-3">
+                {nearbyPlaces.map((nearbyPlace) => (
+                  <div key={nearbyPlace.id} className="rounded-2xl bg-white p-4 text-sm text-zinc-700">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-zinc-900">{nearbyPlace.name}</p>
+                        <p className="text-xs uppercase tracking-wide text-zinc-500">{nearbyPlace.category}</p>
+                      </div>
+                      {nearbyPlace.favorite ? (
+                        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">Favorit</span>
+                      ) : null}
+                    </div>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                      <p>Distanz: {nearbyPlace.distance_meters !== null ? `${nearbyPlace.distance_meters} m` : "-"}</p>
+                      <p>Gehzeit: {nearbyPlace.walking_minutes !== null ? `${nearbyPlace.walking_minutes} Min` : "-"}</p>
+                      <p>Bewertung: {nearbyPlace.rating !== null ? `${nearbyPlace.rating}/10` : "-"}</p>
+                    </div>
+                    {nearbyPlace.description ? <p className="mt-3">{nearbyPlace.description}</p> : null}
+                    {nearbyPlace.user_note ? <p className="mt-2 text-zinc-600">{nearbyPlace.user_note}</p> : null}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-4 text-sm text-zinc-600">Noch keine Nearby-Orte verknüpft.</p>
+            )}
+          </div>
         </section>
       ) : null}
 
@@ -421,8 +557,18 @@ async function PlaceDetailContent({
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {placePhotos.map((photo) => (
                 <div key={photo.id} className="rounded-2xl bg-white p-4 text-sm text-zinc-700">
-                  <p className="font-medium text-zinc-900">{photo.caption ?? "Foto"}</p>
-                  <p className="mt-2 break-all text-xs text-zinc-500">{photo.storage_path}</p>
+                  {photoUrls.get(photo.id) ? (
+                    <img
+                      src={photoUrls.get(photo.id)}
+                      alt={photo.caption ?? "Platzfoto"}
+                      className="h-48 w-full rounded-xl object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-48 items-center justify-center rounded-xl bg-zinc-100 text-xs text-zinc-500">
+                      Bild nicht verfügbar
+                    </div>
+                  )}
+                  <p className="mt-3 font-medium text-zinc-900">{photo.caption ?? "Foto"}</p>
                 </div>
               ))}
             </div>
