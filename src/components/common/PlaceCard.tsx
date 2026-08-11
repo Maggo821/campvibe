@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { PlaceSummary } from "@/types/database";
+import { getPlaceTypeTagLabel } from "@/lib/data/labels";
 
 interface PlaceCardProps {
   place: PlaceSummary;
@@ -34,7 +35,7 @@ export function PlaceCard({ place }: PlaceCardProps) {
       <div className="flex flex-wrap gap-2">
         {place.tags.map((tag) => (
           <span key={tag} className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-700">
-            {tag}
+            {getPlaceTypeTagLabel(tag)}
           </span>
         ))}
       </div>

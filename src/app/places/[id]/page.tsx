@@ -4,6 +4,7 @@ import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { PlaceSummary } from "@/types/database";
 import { updateUserPlaceStatusAction } from "@/app/places/[id]/actions";
+import { getFeatureLabel } from "@/lib/data/labels";
 
 const tabs = [
   { key: "overview", label: "Übersicht" },
@@ -230,6 +231,7 @@ async function PlaceDetailContent({
         const featureMap = new Map((featuresRows.data ?? []).map((feature) => [feature.id, feature.name]));
         featureNames = (placeFeatureRows.data ?? [])
           .map((row) => featureMap.get(row.feature_id))
+          .map((name) => (name ? getFeatureLabel(name) : name))
           .filter((value): value is string => Boolean(value));
 
         if (user) {

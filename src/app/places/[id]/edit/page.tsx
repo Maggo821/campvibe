@@ -84,7 +84,7 @@ export default async function EditPlacePage({ params }: { params: Promise<{ id: 
     );
   }
 
-  const [{ data: place }, { data: features }, { data: placeFeatures }, { data: vibe }, { data: environment }] = await Promise.all([
+  const [{ data: place }, { data: features }, { data: placeFeatures }, { data: vibe }, { data: environment }, { data: photos }] = await Promise.all([
     supabase
       .from("places")
       .select("id, name, description, place_type, street, postal_code, city, state, country, latitude, longitude, website, phone, email, price_from, currency, checkin_time, checkout_time, quiet_hours_from, quiet_hours_to, permanent_camper_level, pitch_style, evening_rules, created_by")
@@ -104,6 +104,12 @@ export default async function EditPlacePage({ params }: { params: Promise<{ id: 
       .eq("place_id", id)
       .eq("user_id", user.id)
       .maybeSingle(),
+    supabase
+      .from("place_photos")
+      .select("id, caption, storage_path")
+      .eq("place_id", id)
+      .eq("user_id", user.id)
+      .order("sort_order", { ascending: true }),
   ]);
 
   if (!place) {
@@ -125,6 +131,25 @@ export default async function EditPlacePage({ params }: { params: Promise<{ id: 
   const selectedFeatureIds = (placeFeatures ?? []).map((entry) => entry.feature_id);
   const vibeScores = Object.fromEntries(vibeFields.map((field) => [field, valueToString(vibe?.[field])]));
   const environmentScores = Object.fromEntries(environmentFields.map((field) => [field, valueToString(environment?.[field])]));
+  const existingPhotos = (photos ?? []).map((photo) => ({
+    id: photo.id,
+    caption: photo.caption ?? "",
+    storagePath: photo.storage_path,
+  }));
+
+  const signedUrls = new Map<string, string>();
+  if (existingPhotos.length > 0) {
+    const signedUrlResult = await supabase.storage
+      .from("place-photos")
+      .createSignedUrls(existingPhotos.map((photo) => photo.storagePath), 60 * 60);
+
+    (signedUrlResult.data ?? []).forEach((entry, index) => {
+      const photo = existingPhotos[index];
+      if (photo && entry?.signedUrl) {
+        signedUrls.set(photo.id, entry.signedUrl);
+      }
+    });
+  }
 
   return (
     <main className="space-y-4 rounded-[2rem] border border-black/10 bg-white/80 p-6 shadow-sm">
@@ -164,6 +189,13 @@ export default async function EditPlacePage({ params }: { params: Promise<{ id: 
           vibeNote: vibe?.note ?? "",
           environmentScores,
           environmentNote: environment?.note ?? "",
+          existingPhotos: existingPhotos
+            .map((photo) => ({
+              id: photo.id,
+              caption: photo.caption,
+              url: signedUrls.get(photo.id),
+            }))
+            .filter((photo): photo is { id: string; caption: string; url: string } => Boolean(photo.url)),
         }}
       />
     </main>

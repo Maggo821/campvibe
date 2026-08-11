@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const PLACE_TYPES = [
@@ -67,6 +68,11 @@ export interface UpdatePlaceState {
   message: string;
 }
 
+export interface DeletePlaceState {
+  success: boolean;
+  message: string;
+}
+
 function nullableText(value: FormDataEntryValue | null) {
   if (!value) {
     return null;
@@ -106,6 +112,15 @@ function parseEnum<T extends readonly string[]>(value: FormDataEntryValue | null
   }
 
   return allowed.includes(text) ? (text as T[number]) : fallback;
+}
+
+function sanitizeFileName(fileName: string) {
+  return fileName
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase();
 }
 
 export async function updatePlaceAction(
@@ -207,6 +222,14 @@ export async function updatePlaceAction(
     .getAll("feature_ids")
     .map((value) => value.toString())
     .filter(Boolean);
+  const deletePhotoIds = formData
+    .getAll("delete_photo_ids")
+    .map((value) => value.toString())
+    .filter(Boolean);
+  const uploadedFiles = formData
+    .getAll("photos")
+    .filter((value): value is File => value instanceof File && value.size > 0);
+  const photoCaption = nullableText(formData.get("photo_caption"));
 
   const payload = {
     name,
@@ -316,6 +339,82 @@ export async function updatePlaceAction(
       .eq("place_id", placeId);
   }
 
+  if (deletePhotoIds.length > 0) {
+    const { data: photosToDelete, error: selectPhotoError } = await supabase
+      .from("place_photos")
+      .select("id, storage_path")
+      .eq("place_id", placeId)
+      .eq("user_id", user.id)
+      .in("id", deletePhotoIds);
+
+    if (selectPhotoError) {
+      followUpErrors.push(`Fotos konnten nicht geladen werden: ${selectPhotoError.message}`);
+    } else {
+      const storagePaths = (photosToDelete ?? []).map((photo) => photo.storage_path);
+      if (storagePaths.length > 0) {
+        const { error: removeStorageError } = await supabase.storage
+          .from("place-photos")
+          .remove(storagePaths);
+
+        if (removeStorageError) {
+          followUpErrors.push(`Fotos im Storage konnten nicht geloescht werden: ${removeStorageError.message}`);
+        }
+      }
+
+      const { error: deletePhotoRowsError } = await supabase
+        .from("place_photos")
+        .delete()
+        .eq("place_id", placeId)
+        .eq("user_id", user.id)
+        .in("id", deletePhotoIds);
+
+      if (deletePhotoRowsError) {
+        followUpErrors.push(`Foto-Metadaten konnten nicht geloescht werden: ${deletePhotoRowsError.message}`);
+      }
+    }
+  }
+
+  if (uploadedFiles.length > 0) {
+    const { data: existingPhotos } = await supabase
+      .from("place_photos")
+      .select("id")
+      .eq("place_id", placeId)
+      .eq("user_id", user.id);
+
+    const baseSortOrder = existingPhotos?.length ?? 0;
+
+    for (const [index, file] of uploadedFiles.entries()) {
+      const extension = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : "";
+      const baseName = sanitizeFileName(file.name.replace(extension, ""));
+      const storagePath = `${user.id}/${placeId}/${Date.now()}-${index}-${baseName}${extension.toLowerCase()}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("place-photos")
+        .upload(storagePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: file.type || undefined,
+        });
+
+      if (uploadError) {
+        followUpErrors.push(`Foto ${file.name} nicht hochgeladen: ${uploadError.message}`);
+        continue;
+      }
+
+      const { error: photoError } = await supabase.from("place_photos").insert({
+        place_id: placeId,
+        user_id: user.id,
+        storage_path: storagePath,
+        caption: photoCaption ?? file.name,
+        sort_order: baseSortOrder + index,
+      });
+
+      if (photoError) {
+        followUpErrors.push(`Foto-Metadaten fuer ${file.name} nicht gespeichert: ${photoError.message}`);
+      }
+    }
+  }
+
   revalidatePath(`/places/${placeId}`);
   revalidatePath(`/places/${placeId}?tab=overview`);
   revalidatePath(`/places/${placeId}/edit`);
@@ -329,4 +428,79 @@ export async function updatePlaceAction(
     success: true,
     message: followUpErrors.join(" | ") || "Platz erfolgreich aktualisiert.",
   };
+}
+
+export async function deletePlaceAction(
+  _previousState: DeletePlaceState,
+  formData: FormData,
+): Promise<DeletePlaceState> {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) {
+    return {
+      success: false,
+      message: "Supabase ist noch nicht konfiguriert (.env.local fehlt oder unvollstaendig).",
+    };
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      message: "Bitte zuerst anmelden, um einen Platz zu loeschen.",
+    };
+  }
+
+  const placeId = nullableText(formData.get("place_id"));
+  if (!placeId) {
+    return { success: false, message: "Ungueltige Platz-ID." };
+  }
+
+  const { data: ownedPlace } = await supabase
+    .from("places")
+    .select("id")
+    .eq("id", placeId)
+    .eq("created_by", user.id)
+    .maybeSingle();
+
+  if (!ownedPlace) {
+    return {
+      success: false,
+      message: "Du kannst nur Plaetze loeschen, die du selbst angelegt hast.",
+    };
+  }
+
+  const { data: ownPhotos } = await supabase
+    .from("place_photos")
+    .select("storage_path")
+    .eq("place_id", placeId)
+    .eq("user_id", user.id);
+
+  const ownStoragePaths = (ownPhotos ?? []).map((photo) => photo.storage_path);
+  if (ownStoragePaths.length > 0) {
+    await supabase.storage.from("place-photos").remove(ownStoragePaths);
+  }
+
+  const { error: deleteError } = await supabase
+    .from("places")
+    .delete()
+    .eq("id", placeId)
+    .eq("created_by", user.id);
+
+  if (deleteError) {
+    return {
+      success: false,
+      message: `Loeschen fehlgeschlagen: ${deleteError.message}`,
+    };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/my-places");
+  revalidatePath("/my-places/visited");
+  revalidatePath("/discover");
+  revalidatePath("/map");
+
+  redirect("/my-places");
 }

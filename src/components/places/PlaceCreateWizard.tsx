@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import { createPlaceAction, type CreatePlaceState } from "@/app/places/new/actions";
+import { getFeatureLabel } from "@/lib/data/labels";
 
 interface FeatureOption {
   id: string;
@@ -461,7 +462,7 @@ export function PlaceCreateWizard({ initialFeatures }: PlaceCreateWizardProps) {
               const active = selectedFeatureIds.includes(feature.id);
               return (
                 <button key={feature.id} type="button" onClick={() => toggleFeature(feature.id)} className={`rounded-full px-4 py-2 text-sm ${active ? "bg-zinc-900 text-white" : "border border-zinc-300 bg-white text-zinc-700"}`}>
-                  {feature.name}
+                  {getFeatureLabel(feature.name)}
                 </button>
               );
             })}
