@@ -3,6 +3,42 @@ import { PlaceCreateWizard } from "@/components/places/PlaceCreateWizard";
 import { getSupabaseEnvDiagnostics, hasSupabaseEnv } from "@/lib/supabase/env";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
+const fallbackFeatures = [
+  "Restaurant",
+  "Bar",
+  "Beachbar",
+  "Cafe",
+  "Bakery",
+  "Supermarket",
+  "Pool",
+  "Indoor Pool",
+  "Sauna",
+  "Wellness",
+  "Fitness",
+  "Lake",
+  "Sea",
+  "River",
+  "Beach",
+  "Dog Beach",
+  "SUP",
+  "Kayak",
+  "Boat Rental",
+  "Bike Rental",
+  "E-Bike Rental",
+  "Playground",
+  "Animation",
+  "Live Music",
+  "Events",
+  "WiFi",
+  "Washing Machine",
+  "Dryer",
+  "Electricity",
+  "Fresh Water",
+  "Waste Water",
+  "Chemical Toilet Disposal",
+  "Motorhome Service",
+].map((name) => ({ id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"), name }));
+
 export default async function NewPlacePage() {
   const supabaseReady = hasSupabaseEnv();
   const envDiagnostics = getSupabaseEnvDiagnostics();
@@ -29,6 +65,11 @@ export default async function NewPlacePage() {
     data: { user },
   } = await supabase!.auth.getUser();
 
+  const { data: features } = await supabase!
+    .from("features")
+    .select("id, name")
+    .order("name", { ascending: true });
+
   if (!user) {
     return (
       <main className="rounded-[2rem] border border-black/10 bg-white/80 p-6 shadow-sm">
@@ -50,7 +91,7 @@ export default async function NewPlacePage() {
         Der Flow bleibt mobil und leichtgewichtig: speichern ist bereits nach den Grunddaten möglich.
       </p>
       <div className="mt-6">
-        <PlaceCreateWizard />
+        <PlaceCreateWizard initialFeatures={features?.length ? features : fallbackFeatures} />
       </div>
     </main>
   );

@@ -19,6 +19,7 @@ CampVibe is a mobile-first travel and vanlife companion for discovering, rating,
 3. Apply Supabase migrations in order:
 	- supabase/migrations/001_init_schema.sql
 	- supabase/migrations/002_phase1_hardening.sql
+	- supabase/migrations/003_storage_place_photos.sql
 4. Start the app with npm run dev.
 
 ### Supabase Setup (with your project)
@@ -36,6 +37,8 @@ Example migration via psql (PowerShell):
 `$env:DIRECT_URL="postgresql://..."; psql $env:DIRECT_URL -f supabase/migrations/001_init_schema.sql`
 
 `$env:DIRECT_URL="postgresql://..."; psql $env:DIRECT_URL -f supabase/migrations/002_phase1_hardening.sql`
+
+`$env:DIRECT_URL="postgresql://..."; psql $env:DIRECT_URL -f supabase/migrations/003_storage_place_photos.sql`
 
 Optional seed import:
 

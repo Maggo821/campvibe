@@ -6,5 +6,6 @@
 4. Apply migrations in order:
 	- supabase/migrations/001_init_schema.sql
 	- supabase/migrations/002_phase1_hardening.sql
+	- supabase/migrations/003_storage_place_photos.sql
 5. Optionally run supabase/seed.sql to import initial feature data.
 6. Start the app with npm run dev.

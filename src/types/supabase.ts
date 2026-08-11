@@ -9,6 +9,27 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      features: {
+        Row: {
+          id: string;
+          name: string;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
       places: {
         Row: {
           id: string;
@@ -91,6 +112,195 @@ export type Database = {
           pitch_style?: string | null;
           evening_rules?: string | null;
           created_by?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      place_environment_ratings: {
+        Row: {
+          id: string;
+          user_id: string;
+          place_id: string;
+          overall_environment: number | null;
+          evening_activity: number | null;
+          restaurants: number | null;
+          bars: number | null;
+          shopping: number | null;
+          nature: number | null;
+          excursions: number | null;
+          cycling: number | null;
+          hiking: number | null;
+          water_sports: number | null;
+          town_accessibility: number | null;
+          note: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          place_id: string;
+          overall_environment?: number | null;
+          evening_activity?: number | null;
+          restaurants?: number | null;
+          bars?: number | null;
+          shopping?: number | null;
+          nature?: number | null;
+          excursions?: number | null;
+          cycling?: number | null;
+          hiking?: number | null;
+          water_sports?: number | null;
+          town_accessibility?: number | null;
+          note?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          place_id?: string;
+          overall_environment?: number | null;
+          evening_activity?: number | null;
+          restaurants?: number | null;
+          bars?: number | null;
+          shopping?: number | null;
+          nature?: number | null;
+          excursions?: number | null;
+          cycling?: number | null;
+          hiking?: number | null;
+          water_sports?: number | null;
+          town_accessibility?: number | null;
+          note?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      place_features: {
+        Row: {
+          id: string;
+          place_id: string;
+          feature_id: string;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          place_id: string;
+          feature_id: string;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          place_id?: string;
+          feature_id?: string;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      place_photos: {
+        Row: {
+          id: string;
+          place_id: string;
+          user_id: string;
+          storage_path: string;
+          caption: string | null;
+          sort_order: number | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          place_id: string;
+          user_id: string;
+          storage_path: string;
+          caption?: string | null;
+          sort_order?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          place_id?: string;
+          user_id?: string;
+          storage_path?: string;
+          caption?: string | null;
+          sort_order?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      place_vibe_ratings: {
+        Row: {
+          id: string;
+          user_id: string;
+          place_id: string;
+          overall: number | null;
+          vanlife: number | null;
+          nature: number | null;
+          nightlife: number | null;
+          beach_bar: number | null;
+          international: number | null;
+          modern: number | null;
+          open_space: number | null;
+          privacy: number | null;
+          gastronomy: number | null;
+          surroundings: number | null;
+          value_for_money: number | null;
+          atmosphere_score: number | null;
+          camping_style_score: number | null;
+          audience_vibe_score: number | null;
+          note: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          place_id: string;
+          overall?: number | null;
+          vanlife?: number | null;
+          nature?: number | null;
+          nightlife?: number | null;
+          beach_bar?: number | null;
+          international?: number | null;
+          modern?: number | null;
+          open_space?: number | null;
+          privacy?: number | null;
+          gastronomy?: number | null;
+          surroundings?: number | null;
+          value_for_money?: number | null;
+          atmosphere_score?: number | null;
+          camping_style_score?: number | null;
+          audience_vibe_score?: number | null;
+          note?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          place_id?: string;
+          overall?: number | null;
+          vanlife?: number | null;
+          nature?: number | null;
+          nightlife?: number | null;
+          beach_bar?: number | null;
+          international?: number | null;
+          modern?: number | null;
+          open_space?: number | null;
+          privacy?: number | null;
+          gastronomy?: number | null;
+          surroundings?: number | null;
+          value_for_money?: number | null;
+          atmosphere_score?: number | null;
+          camping_style_score?: number | null;
+          audience_vibe_score?: number | null;
+          note?: string | null;
           created_at?: string | null;
           updated_at?: string | null;
         };

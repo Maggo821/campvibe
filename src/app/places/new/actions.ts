@@ -36,6 +36,38 @@ export interface CreatePlaceState {
   placeId?: string;
 }
 
+const VIBE_FIELDS = [
+  "overall",
+  "vanlife",
+  "nature",
+  "nightlife",
+  "beach_bar",
+  "international",
+  "modern",
+  "open_space",
+  "privacy",
+  "gastronomy",
+  "surroundings",
+  "value_for_money",
+  "atmosphere_score",
+  "camping_style_score",
+  "audience_vibe_score",
+] as const;
+
+const ENVIRONMENT_FIELDS = [
+  "overall_environment",
+  "evening_activity",
+  "restaurants",
+  "bars",
+  "shopping",
+  "nature",
+  "excursions",
+  "cycling",
+  "hiking",
+  "water_sports",
+  "town_accessibility",
+] as const;
+
 function nullableText(value: FormDataEntryValue | null) {
   if (!value) {
     return null;
@@ -55,6 +87,19 @@ function parseNumber(value: FormDataEntryValue | null) {
   return Number.isFinite(parsed) ? parsed : Number.NaN;
 }
 
+function parseOptionalRating(value: FormDataEntryValue | null) {
+  const parsed = parseNumber(value);
+  if (parsed === null) {
+    return null;
+  }
+
+  if (Number.isNaN(parsed) || parsed < 1 || parsed > 10) {
+    return Number.NaN;
+  }
+
+  return Math.round(parsed);
+}
+
 function parseEnum<T extends readonly string[]>(value: FormDataEntryValue | null, allowed: T, fallback: T[number]) {
   const text = nullableText(value);
   if (!text) {
@@ -62,6 +107,15 @@ function parseEnum<T extends readonly string[]>(value: FormDataEntryValue | null
   }
 
   return allowed.includes(text) ? (text as T[number]) : fallback;
+}
+
+function sanitizeFileName(fileName: string) {
+  return fileName
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase();
 }
 
 export async function createPlaceAction(
@@ -116,6 +170,40 @@ export async function createPlaceAction(
   const pitchStyle = parseEnum(formData.get("pitch_style"), PITCH_STYLES, "unknown");
   const eveningRules = parseEnum(formData.get("evening_rules"), EVENING_RULES, "unknown");
 
+  const vibePayload = Object.fromEntries(
+    VIBE_FIELDS.map((field) => [field, parseOptionalRating(formData.get(field))]),
+  ) as Record<(typeof VIBE_FIELDS)[number], number | null>;
+
+  const invalidVibeField = VIBE_FIELDS.find((field) => Number.isNaN(vibePayload[field] as number));
+  if (invalidVibeField) {
+    return {
+      success: false,
+      message: `Vibe-Wert für ${invalidVibeField} muss zwischen 1 und 10 liegen.`,
+    };
+  }
+
+  const environmentPayload = Object.fromEntries(
+    ENVIRONMENT_FIELDS.map((field) => [field, parseOptionalRating(formData.get(field))]),
+  ) as Record<(typeof ENVIRONMENT_FIELDS)[number], number | null>;
+
+  const invalidEnvironmentField = ENVIRONMENT_FIELDS.find((field) => Number.isNaN(environmentPayload[field] as number));
+  if (invalidEnvironmentField) {
+    return {
+      success: false,
+      message: `Umgebungswert für ${invalidEnvironmentField} muss zwischen 1 und 10 liegen.`,
+    };
+  }
+
+  const selectedFeatureIds = formData
+    .getAll("feature_ids")
+    .map((value) => value.toString())
+    .filter(Boolean);
+
+  const photoCaption = nullableText(formData.get("photo_caption"));
+  const uploadedFiles = formData
+    .getAll("photos")
+    .filter((value): value is File => value instanceof File && value.size > 0);
+
   const payload = {
     name,
     description: nullableText(formData.get("description")),
@@ -166,16 +254,102 @@ export async function createPlaceAction(
       { onConflict: "user_id,place_id" },
     );
 
+  const followUpErrors: string[] = [];
+
+  if (selectedFeatureIds.length > 0) {
+    const { error: featureError } = await supabase.from("place_features").insert(
+      selectedFeatureIds.map((featureId) => ({
+        place_id: data.id,
+        feature_id: featureId,
+      })),
+    );
+
+    if (featureError) {
+      followUpErrors.push(`Ausstattung nicht gespeichert: ${featureError.message}`);
+    }
+  }
+
+  const hasAnyVibeValue = VIBE_FIELDS.some((field) => vibePayload[field] !== null) || nullableText(formData.get("vibe_note"));
+  if (hasAnyVibeValue) {
+    const { error: vibeError } = await supabase.from("place_vibe_ratings").upsert(
+      {
+        user_id: user.id,
+        place_id: data.id,
+        ...vibePayload,
+        note: nullableText(formData.get("vibe_note")),
+      },
+      { onConflict: "user_id,place_id" },
+    );
+
+    if (vibeError) {
+      followUpErrors.push(`Vibe-Bewertung nicht gespeichert: ${vibeError.message}`);
+    }
+  }
+
+  const hasAnyEnvironmentValue = ENVIRONMENT_FIELDS.some((field) => environmentPayload[field] !== null) || nullableText(formData.get("environment_note"));
+  if (hasAnyEnvironmentValue) {
+    const { error: environmentError } = await supabase.from("place_environment_ratings").upsert(
+      {
+        user_id: user.id,
+        place_id: data.id,
+        ...environmentPayload,
+        note: nullableText(formData.get("environment_note")),
+      },
+      { onConflict: "user_id,place_id" },
+    );
+
+    if (environmentError) {
+      followUpErrors.push(`Umgebungsbewertung nicht gespeichert: ${environmentError.message}`);
+    }
+  }
+
+  if (uploadedFiles.length > 0) {
+    for (const [index, file] of uploadedFiles.entries()) {
+      const extension = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : "";
+      const baseName = sanitizeFileName(file.name.replace(extension, ""));
+      const storagePath = `${user.id}/${data.id}/${Date.now()}-${index}-${baseName}${extension.toLowerCase()}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("place-photos")
+        .upload(storagePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: file.type || undefined,
+        });
+
+      if (uploadError) {
+        followUpErrors.push(`Foto ${file.name} nicht hochgeladen: ${uploadError.message}`);
+        continue;
+      }
+
+      const { error: photoError } = await supabase.from("place_photos").insert({
+        place_id: data.id,
+        user_id: user.id,
+        storage_path: storagePath,
+        caption: photoCaption ?? file.name,
+        sort_order: index,
+      });
+
+      if (photoError) {
+        followUpErrors.push(`Foto-Metadaten für ${file.name} nicht gespeichert: ${photoError.message}`);
+      }
+    }
+  }
+
   revalidatePath("/");
   revalidatePath("/my-places");
   revalidatePath("/my-places/visited");
   revalidatePath(`/places/${data.id}`);
+  revalidatePath("/discover");
+  revalidatePath("/map");
 
   return {
     success: true,
-    message: statusError
-      ? `Platz gespeichert, aber Status konnte nicht gesetzt werden: ${statusError.message}`
-      : "Platz erfolgreich gespeichert.",
+    message:
+      [
+        statusError ? `Status nicht gesetzt: ${statusError.message}` : null,
+        ...followUpErrors,
+      ].filter(Boolean).join(" | ") || "Platz erfolgreich gespeichert.",
     placeId: data.id,
   };
 }
