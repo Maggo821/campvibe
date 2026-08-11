@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { MapLibreMap } from "@/components/map/MapLibreMap";
 import { PlaceCard } from "@/components/common/PlaceCard";
-import { demoPlaces } from "@/lib/data/demo-places";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { PlaceSummary } from "@/types/database";
@@ -79,7 +78,7 @@ async function MapContent({
 }) {
   const params = await searchParams;
   const status = normalizeStatus(params.status);
-  let places: PlaceSummary[] = demoPlaces;
+  let places: PlaceSummary[] = [];
 
   if (hasSupabaseEnv()) {
     const supabase = await getSupabaseServerClient();
@@ -138,6 +137,8 @@ async function MapContent({
     });
   }
 
+  const placesWithCoordinates = places.filter((place) => place.latitude !== 0 && place.longitude !== 0);
+
   return (
     <main className="flex flex-1 flex-col gap-4">
       <div className="rounded-[2rem] border border-black/10 bg-white/80 p-5 shadow-sm">
@@ -167,10 +168,21 @@ async function MapContent({
         <MapLibreMap places={places} />
       </section>
 
+      {placesWithCoordinates.length === 0 ? (
+        <section className="rounded-[2rem] border border-dashed border-zinc-300 bg-zinc-50 p-6 text-sm text-zinc-600">
+          Noch keine Plätze mit Koordinaten vorhanden. Lege einen Platz mit Adresssuche oder manuell gesetzten Koordinaten an.
+        </section>
+      ) : null}
+
       <section className="grid gap-3">
         {places.map((place) => (
           <PlaceCard key={place.id} place={place} />
         ))}
+        {places.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-zinc-300 bg-zinc-50 p-6 text-sm text-zinc-600">
+            Noch keine echten Plätze gefunden.
+          </div>
+        ) : null}
       </section>
     </main>
   );

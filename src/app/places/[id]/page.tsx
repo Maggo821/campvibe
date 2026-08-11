@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { demoPlaces } from "@/lib/data/demo-places";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { PlaceSummary } from "@/types/database";
@@ -148,7 +147,7 @@ async function PlaceDetailContent({
   const { id } = await params;
   const { tab } = await searchParams;
   const activeTab = normalizeTab(tab);
-  let place = demoPlaces.find((entry) => entry.id === id);
+  let place: PlaceSummary | null = null;
   let featureNames: string[] = [];
   let visits: Array<{
     id: string;
@@ -205,7 +204,7 @@ async function PlaceDetailContent({
           id: data.id,
           name: data.name,
           description: data.description ?? "",
-          placeType: data.place_type as (typeof demoPlaces)[number]["placeType"],
+          placeType: data.place_type as PlaceSummary["placeType"],
           city: data.city ?? "",
           country: data.country ?? "",
           latitude: data.latitude ?? 0,

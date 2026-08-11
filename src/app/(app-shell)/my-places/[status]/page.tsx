@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PlaceCard } from "@/components/common/PlaceCard";
-import { demoPlaces } from "@/lib/data/demo-places";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { PlaceSummary } from "@/types/database";
@@ -32,15 +31,7 @@ export default async function MyPlacesStatusPage({ params }: { params: Promise<{
   }
 
   const typedStatus = status as (typeof allowedStatuses)[number];
-  let places: PlaceSummary[] = demoPlaces.filter((place) => {
-    if (typedStatus === "favorites") {
-      return place.status === "favorite";
-    }
-    if (typedStatus === "never-again") {
-      return place.status === "never_again";
-    }
-    return place.status === typedStatus;
-  });
+  let places: PlaceSummary[] = [];
 
   if (hasSupabaseEnv()) {
     const supabase = await getSupabaseServerClient();

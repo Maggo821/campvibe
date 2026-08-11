@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { demoPlaces } from "@/lib/data/demo-places";
 import { PlaceCard } from "@/components/common/PlaceCard";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -48,7 +47,7 @@ export default function MyPlacesPage() {
 
 async function MyPlacesContent() {
   const supabaseReady = hasSupabaseEnv();
-  let places: PlaceSummary[] = demoPlaces;
+  let places: PlaceSummary[] = [];
 
   if (supabaseReady) {
     const supabase = await getSupabaseServerClient();
@@ -112,8 +111,6 @@ async function MyPlacesContent() {
         } else {
           places = [];
         }
-      } else {
-        places = demoPlaces;
       }
     }
   }

@@ -5,6 +5,30 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { PlaceSummary } from "@/types/database";
 
+const osmStyle: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {
+    osm: {
+      type: "raster",
+      tiles: [
+        "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      ],
+      tileSize: 256,
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxzoom: 19,
+    },
+  },
+  layers: [
+    {
+      id: "osm",
+      type: "raster",
+      source: "osm",
+    },
+  ],
+};
+
 interface MapLibreMapProps {
   places: PlaceSummary[];
 }
@@ -84,7 +108,7 @@ export function MapLibreMap({ places }: MapLibreMapProps) {
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: "https://demotiles.maplibre.org/style.json",
+      style: osmStyle,
       center: [center.lng, center.lat],
       zoom: center.zoom,
     });
@@ -144,9 +168,11 @@ export function MapLibreMap({ places }: MapLibreMapProps) {
     });
 
     if (!bounds.isEmpty()) {
-      map.fitBounds(bounds, { padding: 56, maxZoom: 10, duration: 700 });
+      map.fitBounds(bounds, { padding: 56, maxZoom: 14, duration: 700 });
+    } else {
+      map.easeTo({ center: [center.lng, center.lat], zoom: center.zoom, duration: 700 });
     }
-  }, [validPlaces]);
+  }, [center.lat, center.lng, center.zoom, validPlaces]);
 
   return <div ref={mapContainerRef} className="h-[70vh] min-h-[520px] w-full rounded-[1.75rem]" />;
 }

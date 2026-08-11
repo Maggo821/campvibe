@@ -4,28 +4,28 @@ import { useActionState } from "react";
 import { createNearbyPlaceAction, type CreateNearbyState } from "@/app/places/[id]/nearby/new/actions";
 
 const categories = [
-  "bar",
-  "beach_bar",
-  "restaurant",
-  "cafe",
-  "bakery",
-  "supermarket",
-  "beach",
-  "lake",
-  "spa",
-  "sauna",
-  "bike_rental",
-  "sup_kayak",
-  "boat_rental",
-  "town",
-  "nightlife",
-  "winery",
-  "hiking",
-  "mountain_lift",
-  "attraction",
-  "sight",
-  "other",
-];
+  { value: "bar", label: "Bar" },
+  { value: "beach_bar", label: "Beachbar" },
+  { value: "restaurant", label: "Restaurant" },
+  { value: "cafe", label: "Café" },
+  { value: "bakery", label: "Bäckerei" },
+  { value: "supermarket", label: "Supermarkt" },
+  { value: "beach", label: "Strand" },
+  { value: "lake", label: "See" },
+  { value: "spa", label: "Spa" },
+  { value: "sauna", label: "Sauna" },
+  { value: "bike_rental", label: "Fahrradverleih" },
+  { value: "sup_kayak", label: "SUP / Kajak" },
+  { value: "boat_rental", label: "Bootsverleih" },
+  { value: "town", label: "Ort" },
+  { value: "nightlife", label: "Nachtleben" },
+  { value: "winery", label: "Weingut" },
+  { value: "hiking", label: "Wandern" },
+  { value: "mountain_lift", label: "Bergbahn" },
+  { value: "attraction", label: "Attraktion" },
+  { value: "sight", label: "Sehenswürdigkeit" },
+  { value: "other", label: "Sonstiges" },
+] as const;
 
 const initialState: CreateNearbyState = {
   success: false,
@@ -53,7 +53,7 @@ export function NewNearbyPlaceForm({ placeId }: NewNearbyPlaceFormProps) {
           <span className="text-sm font-medium">Kategorie *</span>
           <select name="category" required defaultValue="restaurant" className="rounded-2xl border border-zinc-200 bg-white px-3 py-2">
             {categories.map((category) => (
-              <option key={category} value={category}>{category}</option>
+              <option key={category.value} value={category.value}>{category.label}</option>
             ))}
           </select>
         </label>

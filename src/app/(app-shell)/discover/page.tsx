@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { PlaceCard } from "@/components/common/PlaceCard";
-import { demoPlaces } from "@/lib/data/demo-places";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { PlaceSummary } from "@/types/database";
@@ -123,7 +122,7 @@ async function DiscoverContent({
     : "all";
   const q = (params.q ?? "").trim();
 
-  let places: PlaceSummary[] = demoPlaces;
+  let places: PlaceSummary[] = [];
 
   if (hasSupabaseEnv()) {
     const supabase = await getSupabaseServerClient();
@@ -150,23 +149,6 @@ async function DiscoverContent({
       const { data } = await query;
       places = (data ?? []).map(mapPlaceToSummary);
     }
-  } else {
-    places = demoPlaces.filter((place) => {
-      if (placeType !== "all" && place.placeType !== placeType) {
-        return false;
-      }
-      if (permanent !== "all" && place.permanentCamperLevel !== permanent) {
-        return false;
-      }
-      if (evening !== "all" && place.eveningRules !== evening) {
-        return false;
-      }
-      if (q.length > 0) {
-        const search = `${place.name} ${place.city} ${place.country}`.toLowerCase();
-        return search.includes(q.toLowerCase());
-      }
-      return true;
-    });
   }
 
   return (
