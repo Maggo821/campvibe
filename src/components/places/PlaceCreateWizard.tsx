@@ -299,51 +299,10 @@ export function PlaceCreateWizard({ initialFeatures }: PlaceCreateWizardProps) {
       </div>
 
       {step === 0 ? (
-        <section className="grid gap-3 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 sm:col-span-2">
-            <span className="text-sm font-medium">Name *</span>
-            <input value={name} onChange={(event) => setName(event.target.value)} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
-          </label>
-          <label className="flex flex-col gap-1 sm:col-span-2">
-            <span className="text-sm font-medium">Beschreibung</span>
-            <textarea rows={4} value={description} onChange={(event) => setDescription(event.target.value)} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Stadt</span>
-            <input value={city} onChange={(event) => setCity(event.target.value)} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Land</span>
-            <input value={country} onChange={(event) => setCountry(event.target.value)} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
-          </label>
-          <label className="flex flex-col gap-1 sm:col-span-2">
-            <span className="text-sm font-medium">Platztyp</span>
-            <select value={placeType} onChange={(event) => setPlaceType(event.target.value as (typeof placeTypes)[number]["value"])} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2">
-              {placeTypes.map((type) => (
-                <option key={type.value} value={type.value}>{type.label}</option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Website</span>
-            <input type="url" value={website} onChange={(event) => setWebsite(event.target.value)} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Telefon</span>
-            <input value={phone} onChange={(event) => setPhone(event.target.value)} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
-          </label>
-          <label className="flex flex-col gap-1 sm:col-span-2">
-            <span className="text-sm font-medium">E-Mail</span>
-            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
-          </label>
-        </section>
-      ) : null}
-
-      {step === 1 ? (
         <section className="space-y-4">
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
             <p className="text-sm font-medium text-zinc-900">Adresse suchen</p>
-            <p className="mt-1 text-xs text-zinc-600">Gib einen Ortsnamen oder eine Adresse ein. Name, Kontakt und Koordinaten werden soweit möglich vorausgefüllt.</p>
+            <p className="mt-1 text-xs text-zinc-600">Suche direkt hier zu Beginn. Name, Kontakt, Ort und Koordinaten werden soweit möglich automatisch vorausgefüllt.</p>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <input value={addressQuery} onChange={(event) => setAddressQuery(event.target.value)} placeholder="z. B. Campingpark München oder Hauptstraße 12, Hamburg" className="w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
               <button type="button" onClick={searchAddress} disabled={addressLoading} className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
@@ -360,6 +319,53 @@ export function PlaceCreateWizard({ initialFeatures }: PlaceCreateWizardProps) {
                 ))}
               </div>
             ) : null}
+          </div>
+
+          <section className="grid gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1 sm:col-span-2">
+              <span className="text-sm font-medium">Name *</span>
+              <input value={name} onChange={(event) => setName(event.target.value)} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
+            </label>
+            <label className="flex flex-col gap-1 sm:col-span-2">
+              <span className="text-sm font-medium">Beschreibung</span>
+              <textarea rows={4} value={description} onChange={(event) => setDescription(event.target.value)} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-sm font-medium">Stadt</span>
+              <input value={city} onChange={(event) => setCity(event.target.value)} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-sm font-medium">Land</span>
+              <input value={country} onChange={(event) => setCountry(event.target.value)} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
+            </label>
+            <label className="flex flex-col gap-1 sm:col-span-2">
+              <span className="text-sm font-medium">Platztyp</span>
+              <select value={placeType} onChange={(event) => setPlaceType(event.target.value as (typeof placeTypes)[number]["value"])} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2">
+                {placeTypes.map((type) => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-sm font-medium">Website</span>
+              <input type="url" value={website} onChange={(event) => setWebsite(event.target.value)} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-sm font-medium">Telefon</span>
+              <input value={phone} onChange={(event) => setPhone(event.target.value)} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
+            </label>
+            <label className="flex flex-col gap-1 sm:col-span-2">
+              <span className="text-sm font-medium">E-Mail</span>
+              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2" />
+            </label>
+          </section>
+        </section>
+      ) : null}
+
+      {step === 1 ? (
+        <section className="space-y-4">
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">
+            Hier kannst du die Standortdetails nach der Vorbefüllung noch feinjustieren.
           </div>
 
           <section className="grid gap-3 sm:grid-cols-2">
