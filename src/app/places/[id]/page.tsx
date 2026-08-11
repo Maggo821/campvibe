@@ -4,7 +4,7 @@ import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { PlaceSummary } from "@/types/database";
 import { updateUserPlaceStatusAction } from "@/app/places/[id]/actions";
-import { getFeatureLabel } from "@/lib/data/labels";
+import { getFeatureLabel, getNearbyCategoryLabel } from "@/lib/data/labels";
 
 const tabs = [
   { key: "overview", label: "Übersicht" },
@@ -27,8 +27,8 @@ const placeTypeLabels: Record<PlaceSummary["placeType"], string> = {
   winery: "Weingut",
   glamping: "Glamping",
   marina: "Marina",
-  beach_camp: "Beach Camp",
-  festival_camp: "Festival Camp",
+  beach_camp: "Strand-Camp",
+  festival_camp: "Festival-Camp",
   other: "Sonstiges",
 };
 
@@ -126,6 +126,18 @@ function formatLabelValue(label: string, value: string | number | null | undefin
   }
 
   return { label, value: String(value) };
+}
+
+function getNearbyDistanceGroup(distanceMeters: number | null) {
+  if (distanceMeters === 0) {
+    return "on_site" as const;
+  }
+
+  if (distanceMeters !== null && distanceMeters <= 2000) {
+    return "walking" as const;
+  }
+
+  return "area" as const;
 }
 
 export default function PlaceDetailPage({
@@ -509,27 +521,52 @@ async function PlaceDetailContent({
             </div>
 
             {nearbyPlaces.length > 0 ? (
-              <div className="mt-4 grid gap-3">
-                {nearbyPlaces.map((nearbyPlace) => (
-                  <div key={nearbyPlace.id} className="rounded-2xl bg-white p-4 text-sm text-zinc-700">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-zinc-900">{nearbyPlace.name}</p>
-                        <p className="text-xs uppercase tracking-wide text-zinc-500">{nearbyPlace.category}</p>
+              <div className="mt-4 space-y-5">
+                {[
+                  {
+                    key: "on_site",
+                    title: "Auf dem Platz",
+                    items: nearbyPlaces.filter((place) => getNearbyDistanceGroup(place.distance_meters) === "on_site"),
+                  },
+                  {
+                    key: "walking",
+                    title: "Fusslaeufig",
+                    items: nearbyPlaces.filter((place) => getNearbyDistanceGroup(place.distance_meters) === "walking"),
+                  },
+                  {
+                    key: "area",
+                    title: "In der Umgebung",
+                    items: nearbyPlaces.filter((place) => getNearbyDistanceGroup(place.distance_meters) === "area"),
+                  },
+                ].map((group) =>
+                  group.items.length > 0 ? (
+                    <section key={group.key} className="space-y-3">
+                      <h4 className="text-sm font-semibold text-zinc-900">{group.title}</h4>
+                      <div className="grid gap-3">
+                        {group.items.map((nearbyPlace) => (
+                          <div key={nearbyPlace.id} className="rounded-2xl bg-white p-4 text-sm text-zinc-700">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="font-semibold text-zinc-900">{nearbyPlace.name}</p>
+                                <p className="text-xs uppercase tracking-wide text-zinc-500">{getNearbyCategoryLabel(nearbyPlace.category)}</p>
+                              </div>
+                              {nearbyPlace.favorite ? (
+                                <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">Favorit</span>
+                              ) : null}
+                            </div>
+                            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                              <p>Distanz: {nearbyPlace.distance_meters !== null ? `${nearbyPlace.distance_meters} m` : "-"}</p>
+                              <p>Gehzeit: {nearbyPlace.walking_minutes !== null ? `${nearbyPlace.walking_minutes} Min` : "-"}</p>
+                              <p>Bewertung: {nearbyPlace.rating !== null ? `${nearbyPlace.rating}/10` : "-"}</p>
+                            </div>
+                            {nearbyPlace.description ? <p className="mt-3">{nearbyPlace.description}</p> : null}
+                            {nearbyPlace.user_note ? <p className="mt-2 text-zinc-600">{nearbyPlace.user_note}</p> : null}
+                          </div>
+                        ))}
                       </div>
-                      {nearbyPlace.favorite ? (
-                        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">Favorit</span>
-                      ) : null}
-                    </div>
-                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                      <p>Distanz: {nearbyPlace.distance_meters !== null ? `${nearbyPlace.distance_meters} m` : "-"}</p>
-                      <p>Gehzeit: {nearbyPlace.walking_minutes !== null ? `${nearbyPlace.walking_minutes} Min` : "-"}</p>
-                      <p>Bewertung: {nearbyPlace.rating !== null ? `${nearbyPlace.rating}/10` : "-"}</p>
-                    </div>
-                    {nearbyPlace.description ? <p className="mt-3">{nearbyPlace.description}</p> : null}
-                    {nearbyPlace.user_note ? <p className="mt-2 text-zinc-600">{nearbyPlace.user_note}</p> : null}
-                  </div>
-                ))}
+                    </section>
+                  ) : null,
+                )}
               </div>
             ) : (
               <p className="mt-4 text-sm text-zinc-600">Noch keine Nearby-Orte verknüpft.</p>

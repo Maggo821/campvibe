@@ -43,8 +43,32 @@ const placeTypeTagMap: Record<string, string> = {
   winery: "Weingut",
   glamping: "Glamping",
   marina: "Marina",
-  beach_camp: "Beach-Camp",
-  festival_camp: "Festival-Camp",
+  beach_camp: "Strandcamp",
+  festival_camp: "Festivalcamp",
+  other: "Sonstiges",
+};
+
+const nearbyCategoryMap: Record<string, string> = {
+  bar: "Bar",
+  beach_bar: "Strandbar",
+  restaurant: "Restaurant",
+  cafe: "Cafe",
+  bakery: "Baeckerei",
+  supermarket: "Supermarkt",
+  beach: "Strand",
+  lake: "See",
+  spa: "Spa",
+  sauna: "Sauna",
+  bike_rental: "Fahrradverleih",
+  sup_kayak: "SUP / Kajak",
+  boat_rental: "Bootsverleih",
+  town: "Ort",
+  nightlife: "Nachtleben",
+  winery: "Weingut",
+  hiking: "Wandern",
+  mountain_lift: "Bergbahn",
+  attraction: "Attraktion",
+  sight: "Sehenswuerdigkeit",
   other: "Sonstiges",
 };
 
@@ -60,4 +84,9 @@ export function getFeatureLabel(value: string) {
 export function getPlaceTypeTagLabel(value: string) {
   const normalized = normalizeKey(value);
   return placeTypeTagMap[normalized] ?? value;
+}
+
+export function getNearbyCategoryLabel(value: string) {
+  const normalized = normalizeKey(value);
+  return nearbyCategoryMap[normalized] ?? value;
 }

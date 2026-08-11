@@ -5,7 +5,7 @@ import { createNearbyPlaceAction, type CreateNearbyState } from "@/app/places/[i
 
 const categories = [
   { value: "bar", label: "Bar" },
-  { value: "beach_bar", label: "Beachbar" },
+  { value: "beach_bar", label: "Strandbar" },
   { value: "restaurant", label: "Restaurant" },
   { value: "cafe", label: "Café" },
   { value: "bakery", label: "Bäckerei" },
@@ -146,7 +146,7 @@ export function NewNearbyPlaceForm({ placeId }: NewNearbyPlaceFormProps) {
         disabled={pending}
         className="rounded-full bg-zinc-900 px-5 py-2 text-sm font-semibold text-white disabled:opacity-60"
       >
-        {pending ? "Speichert..." : "Nearby Place speichern"}
+        {pending ? "Speichert..." : "Ort in der Naehe speichern"}
       </button>
     </form>
   );

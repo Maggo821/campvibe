@@ -32,8 +32,8 @@ const placeTypeLabels: Record<(typeof placeTypeOptions)[number], string> = {
   winery: "Weingut",
   glamping: "Glamping",
   marina: "Marina",
-  beach_camp: "Beach Camp",
-  festival_camp: "Festival Camp",
+  beach_camp: "Strand-Camp",
+  festival_camp: "Festival-Camp",
   other: "Sonstiges",
 };
 

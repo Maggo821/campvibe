@@ -77,8 +77,8 @@ const placeTypes = [
   { value: "winery", label: "Weingut" },
   { value: "glamping", label: "Glamping" },
   { value: "marina", label: "Marina" },
-  { value: "beach_camp", label: "Beach Camp" },
-  { value: "festival_camp", label: "Festival Camp" },
+  { value: "beach_camp", label: "Strand-Camp" },
+  { value: "festival_camp", label: "Festival-Camp" },
   { value: "other", label: "Sonstiges" },
 ] as const;
 
