@@ -24,11 +24,22 @@ export default async function ProfilePage() {
   }
 
   const supabase = await getSupabaseServerClient();
+  if (!supabase) {
+    return (
+      <main className="rounded-[2rem] border border-black/10 bg-white/80 p-6 shadow-sm">
+        <h1 className="text-2xl font-semibold">Profil</h1>
+        <p className="mt-2 text-sm text-zinc-600">
+          Supabase-Client konnte nicht initialisiert werden. Bitte URL/Key auf Vercel prüfen und neu deployen.
+        </p>
+      </main>
+    );
+  }
+
   const {
     data: { user },
-  } = await supabase!.auth.getUser();
+  } = await supabase.auth.getUser();
 
-  const { count, error: connectionError } = await supabase!
+  const { count, error: connectionError } = await supabase
     .from("places")
     .select("id", { count: "exact", head: true });
 

@@ -147,7 +147,9 @@ async function PlaceDetailContent({
   const { id } = await params;
   const { tab } = await searchParams;
   const activeTab = normalizeTab(tab);
+  let currentUserId: string | null = null;
   let place: PlaceSummary | null = null;
+  let placeOwnerId: string | null = null;
   let featureNames: string[] = [];
   let visits: Array<{
     id: string;
@@ -192,10 +194,11 @@ async function PlaceDetailContent({
       const {
         data: { user },
       } = await supabase.auth.getUser();
+      currentUserId = user?.id ?? null;
 
       const { data } = await supabase
         .from("places")
-        .select("id, name, description, place_type, city, country, street, postal_code, state, latitude, longitude, website, phone, email, price_from, currency, permanent_camper_level, pitch_style, evening_rules")
+        .select("id, name, description, place_type, city, country, street, postal_code, state, latitude, longitude, website, phone, email, price_from, currency, permanent_camper_level, pitch_style, evening_rules, created_by")
         .eq("id", id)
         .maybeSingle();
 
@@ -217,6 +220,7 @@ async function PlaceDetailContent({
           tags: [data.place_type],
           status: "visited",
         };
+        placeOwnerId = data.created_by;
 
         const [placeFeatureRows, featuresRows] = await Promise.all([
           supabase.from("place_features").select("feature_id").eq("place_id", id),
@@ -352,6 +356,14 @@ async function PlaceDetailContent({
         >
           Ort in der Nähe hinzufügen
         </Link>
+        {placeOwnerId && currentUserId && placeOwnerId === currentUserId ? (
+          <Link
+            href={`/places/${place.id}/edit`}
+            className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
+          >
+            Platz bearbeiten
+          </Link>
+        ) : null}
       </div>
 
       <section className="rounded-[1.5rem] border border-zinc-200 bg-zinc-50 p-4">

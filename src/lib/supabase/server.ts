@@ -9,18 +9,26 @@ export async function getSupabaseServerClient() {
     return null;
   }
 
-  const cookieStore = await cookies();
+  try {
+    const cookieStore = await cookies();
 
-  return createServerClient<Database>(env.url, env.anonKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
+    return createServerClient<Database>(env.url, env.anonKey, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            for (const cookie of cookiesToSet) {
+              cookieStore.set(cookie.name, cookie.value, cookie.options);
+            }
+          } catch {
+            // Ignore cookie write errors during server component rendering.
+          }
+        },
       },
-      setAll(cookiesToSet) {
-        for (const cookie of cookiesToSet) {
-          cookieStore.set(cookie.name, cookie.value, cookie.options);
-        }
-      },
-    },
-  });
+    });
+  } catch {
+    return null;
+  }
 }
